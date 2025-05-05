@@ -14,8 +14,8 @@ const GAME_DURATION = 66.6;
 const COUNTDOWN = 3;
 const PLAYER_SPEED = 7;
 const ENEMY_INTERVAL = 40;
-const ENEMY_SPEED = 6;
 const BACKGROUND_SPEED = 6;
+const ENEMY_SPEED_BASE = 6;
 
 let bgOffset = 0;
 let fontSize = 32;
@@ -59,6 +59,7 @@ function draw() {
   } else if (gameState === "countdown") {
     let elapsed = (millis() - countdownStart) / 1000;
     let count = 3 - floor(elapsed);
+    drawHUD();
     if (count > 0) {
       drawText(count.toString(), width / 2, height / 2);
     } else {
@@ -71,8 +72,9 @@ function draw() {
     handleEnemies();
     drawHUD();
     spawnEnemies();
-    let timeElapsed = (millis() - startTime) / 1000;
-    if (timeElapsed >= GAME_DURATION) gameState = "clear";
+    if ((millis() - startTime) / 1000 >= GAME_DURATION) {
+      gameState = "clear";
+    }
     drawVirtualButtons();
   } else if (gameState === "clear") {
     image(clearImage, width / 2, height / 2 - 100);
@@ -85,9 +87,10 @@ function draw() {
 
 function drawScrollingBackground() {
   bgOffset += BACKGROUND_SPEED;
-  let bgHeight = bgImage.height;
-  for (let y = -bgHeight; y < height; y += bgHeight) {
-    image(bgImage, width / 2, y + (bgOffset % bgHeight), width, bgHeight);
+  let bgH = bgImage.height;
+  let n = ceil(height / bgH) + 1;
+  for (let i = 0; i < n; i++) {
+    image(bgImage, width / 2, (i * bgH) - (bgOffset % bgH) + bgH / 2, width, bgH);
   }
 }
 
@@ -117,16 +120,23 @@ function spawnEnemies() {
   if (frameCount % ENEMY_INTERVAL === 0) {
     let type = random(["front", "left", "right"]);
     let x = type === "front" ? random(50, width - 50) : (type === "left" ? 0 : width);
-    enemies.push({ x: x, y: -100, type: type });
+    enemies.push({ x, y: -100, type, vx: 0, vy: ENEMY_SPEED_BASE, t: 0 });
   }
 }
 
 function handleEnemies() {
   for (let i = enemies.length - 1; i >= 0; i--) {
     let e = enemies[i];
-    if (e.type === "front") e.y += ENEMY_SPEED;
-    else if (e.type === "left") { e.x += 3; e.y += ENEMY_SPEED; }
-    else { e.x -= 3; e.y += ENEMY_SPEED; }
+    e.t++;
+    if (e.type === "front") {
+      if (e.t % 60 === 0) e.vx = random(-3, 3);
+    } else if (e.type === "left") {
+      e.vx = 3;
+    } else {
+      e.vx = -3;
+    }
+    e.x += e.vx;
+    e.y += e.vy;
 
     let img = e.type === "front" ? enemyFrontImage :
               e.type === "left" ? enemyLeftImage : enemyRightImage;
@@ -136,24 +146,30 @@ function handleEnemies() {
       enemies.splice(i, 1);
       hp--;
       if (hp <= 0) gameState = "gameover";
-    } else if (e.y > height + 100) {
+    } else if (e.y > height + 100 || e.x < -100 || e.x > width + 100) {
       enemies.splice(i, 1);
     }
   }
 }
 
 function drawHUD() {
-  let remaining = GAME_DURATION - (millis() - startTime) / 1000;
+  let remaining = gameState === "playing" ? GAME_DURATION - (millis() - startTime) / 1000 :
+                 gameState === "countdown" ? GAME_DURATION : 66.6;
   drawText(remaining.toFixed(1), width - 100, 40);
+
   for (let i = 0; i < hp; i++) {
-    image(playerImage, 20 + i * 40, 40, 32, 32);
+    fill(255);
+    rect(20 + i * 60 - 4, 36, 40, 40);
+    image(playerImage, 20 + i * 60, 40, 48, 48);
   }
 }
 
 function drawVirtualButtons() {
   if (windowWidth < 768) {
-    image(leftButtonImage, 80, height - 100, 100, 100);
-    image(rightButtonImage, width - 80, height - 100, 100, 100);
+    tint(255, 127);
+    image(leftButtonImage, 80, height - 80, 64, 64);
+    image(rightButtonImage, width - 80, height - 80, 64, 64);
+    noTint();
   }
 }
 
@@ -167,8 +183,8 @@ function touchStarted() {
     resetGame();
     return false;
   }
-  if (dist(mouseX, mouseY, 80, height - 100) < 50) virtualLeftPressed = true;
-  if (dist(mouseX, mouseY, width - 80, height - 100) < 50) virtualRightPressed = true;
+  if (dist(mouseX, mouseY, 80, height - 80) < 50) virtualLeftPressed = true;
+  if (dist(mouseX, mouseY, width - 80, height - 80) < 50) virtualRightPressed = true;
   return false;
 }
 
