@@ -138,11 +138,12 @@ function handleEnemies() {
     e.t++;
     if (e.type === "front") {
       if (e.t % 60 === 0) e.vx = random(-3, 3);
-    } else if (e.type === "left") {
-      e.vx = 3;
-    } else {
-      e.vx = -3;
-    }
+    } else if (e.type === "left" || e.type === "right") {
+  // 加速＋ジグザグ
+  let dir = e.type === "left" ? 1 : -1;
+  e.vx = dir * (3 + 0.5 * sin(e.t * 0.2));
+  e.vy = ENEMY_SPEED_BASE + 0.5 * cos(e.t * 0.3); // 少し揺れる
+}
     e.x += e.vx;
     e.y += e.vy;
 
