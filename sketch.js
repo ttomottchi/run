@@ -1,3 +1,5 @@
+// sketch.js 完全版
+
 let bgImage, playerImage, enemyFrontImage, enemyLeftImage, enemyRightImage;
 let startImage, clearImage, gameoverImage, retryImage;
 let leftButtonImage, rightButtonImage;
@@ -20,6 +22,8 @@ const BACKGROUND_SPEED = 6;
 const ENEMY_SPEED_BASE = 6;
 
 let bgOffset = 0;
+let rushMode = false;
+let rushStartTime = 0;
 
 function preload() {
   bgImage = loadImage("images/bg.png");
@@ -46,6 +50,10 @@ function setup() {
   textAlign(CENTER, CENTER);
   playerX = width / 2;
   playerY = height - 100;
+  setInterval(() => {
+    rushMode = true;
+    rushStartTime = millis();
+  }, 20000);
 }
 
 function windowResized() {
@@ -92,11 +100,14 @@ function draw() {
     image(gameoverImage, width / 2, height / 2 - 100);
     image(retryImage, width / 2, height / 2 + 100);
   }
+
+  if (rushMode && millis() - rushStartTime > 3000) {
+    rushMode = false;
+  }
 }
 
 function drawScrollingBackground() {
   bgOffset = (bgOffset + BACKGROUND_SPEED) % bgImage.height;
-
   image(bgImage, width / 2, bgOffset - bgImage.height / 2, width, bgImage.height);
   image(bgImage, width / 2, bgOffset + bgImage.height / 2, width, bgImage.height);
 }
@@ -124,11 +135,14 @@ function movePlayer() {
 }
 
 function spawnEnemies() {
-  if (frameCount % ENEMY_INTERVAL === 0) {
-    let type = random(["front", "left", "right", "left", "right"]);
-    let x = type === "front" ? random(width / 2 - 60, width / 2 + 60) :
-            (type === "left" ? 0 : width);
-    enemies.push({ x, y: -100, type, vx: 0, vy: ENEMY_SPEED_BASE, t: 0 });
+  let interval = rushMode ? ENEMY_INTERVAL / 2 : ENEMY_INTERVAL;
+  if (frameCount % interval === 0) {
+    let num = rushMode ? 4 : floor(random(1, 4));
+    for (let i = 0; i < num; i++) {
+      let type = random(["front", "left", "right", "left", "right"]);
+      let x = type === "front" ? random(width / 2 - 60, width / 2 + 60) : (type === "left" ? 0 : width);
+      enemies.push({ x, y: -100, type, vx: 0, vy: ENEMY_SPEED_BASE, t: 0 });
+    }
   }
 }
 
@@ -137,18 +151,21 @@ function handleEnemies() {
     let e = enemies[i];
     e.t++;
     if (e.type === "front") {
-      if (e.t % 60 === 0) e.vx = random(-3, 3);
+      if (e.t % 60 === 0) {
+        let angle = random(-PI / 4, PI / 4);
+        e.vx = 3 * sin(angle);
+        e.vy = ENEMY_SPEED_BASE + 3 * cos(angle);
+      }
     } else if (e.type === "left" || e.type === "right") {
-  // 加速＋ジグザグ
-  let dir = e.type === "left" ? 1 : -1;
-  e.vx = dir * (3 + 0.5 * sin(e.t * 0.2));
-  e.vy = ENEMY_SPEED_BASE + 0.5 * cos(e.t * 0.3); // 少し揺れる
-}
+      let angle = e.type === "left" ? random(-PI / 3, PI / 3) : random(2 * PI / 3, 4 * PI / 3);
+      let speed = ENEMY_SPEED_BASE + random(0, 3);
+      e.vx = speed * cos(angle);
+      e.vy = speed * sin(angle);
+    }
     e.x += e.vx;
     e.y += e.vy;
 
-    let img = e.type === "front" ? enemyFrontImage :
-              e.type === "left" ? enemyLeftImage : enemyRightImage;
+    let img = e.type === "front" ? enemyFrontImage : e.type === "left" ? enemyLeftImage : enemyRightImage;
     image(img, e.x, e.y, 96, 96);
 
     if (dist(playerX, playerY, e.x, e.y) < 48) {
