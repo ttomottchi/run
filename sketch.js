@@ -139,7 +139,12 @@ function spawnEnemies() {
   if (frameCount % interval === 0) {
     let num = rushMode ? 4 : floor(random(1, 4));
     for (let i = 0; i < num; i++) {
-      let type = random(["front", "left", "right", "left", "right"]);
+      let type;
+      if (rushMode) {
+        type = "front";
+      } else {
+        type = random(["front", "left", "right", "left", "right"]);
+      }
       let x = type === "front" ? random(width / 2 - 60, width / 2 + 60) : (type === "left" ? 0 : width);
       let y = type === "front" ? -100 : random(height / 3, height / 2); // 横敵は中央付近に出現
       enemies.push({ x, y, type, vx: 0, vy: 0, t: 0 });
