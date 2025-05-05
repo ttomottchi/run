@@ -17,7 +17,7 @@ const ENEMY_INTERVAL = 40;
 const ENEMY_SPEED = 6;
 const BACKGROUND_SPEED = 6;
 
-let bgY = 0;
+let bgOffset = 0;
 let fontSize = 32;
 
 function preload() {
@@ -49,15 +49,14 @@ function windowResized() {
 function draw() {
   background(0);
   if (["start", "clear", "gameover"].includes(gameState)) {
-    image(bgImage, width / 2, height / 2, width, height);
+    drawStaticBackground();
   } else {
-    drawBackground();
+    drawScrollingBackground();
   }
 
   if (gameState === "start") {
     image(startImage, width / 2, height / 2);
   } else if (gameState === "countdown") {
-    image(bgImage, width / 2, height / 2, width, height);
     let elapsed = (millis() - countdownStart) / 1000;
     let count = 3 - floor(elapsed);
     if (count > 0) {
@@ -72,11 +71,8 @@ function draw() {
     handleEnemies();
     drawHUD();
     spawnEnemies();
-
     let timeElapsed = (millis() - startTime) / 1000;
-    if (timeElapsed >= GAME_DURATION) {
-      gameState = "clear";
-    }
+    if (timeElapsed >= GAME_DURATION) gameState = "clear";
     drawVirtualButtons();
   } else if (gameState === "clear") {
     image(clearImage, width / 2, height / 2 - 100);
@@ -87,11 +83,16 @@ function draw() {
   }
 }
 
-function drawBackground() {
-  bgY += BACKGROUND_SPEED;
-  let imgHeight = bgImage.height;
-  image(bgImage, width / 2, -bgY % height + height / 2, width, height);
-  image(bgImage, width / 2, -bgY % height - height / 2, width, height);
+function drawScrollingBackground() {
+  bgOffset += BACKGROUND_SPEED;
+  let bgHeight = bgImage.height;
+  for (let y = -bgHeight; y < height; y += bgHeight) {
+    image(bgImage, width / 2, y + (bgOffset % bgHeight), width, bgHeight);
+  }
+}
+
+function drawStaticBackground() {
+  image(bgImage, width / 2, height / 2, width, height);
 }
 
 function drawText(txt, x, y) {
@@ -156,31 +157,16 @@ function drawVirtualButtons() {
   }
 }
 
-function mousePressed() {
+function touchStarted() {
   if (gameState === "start") {
-    let x = width / 2, y = height / 2;
-    if (mouseX > x - 150 && mouseX < x + 150 && mouseY > y - 50 && mouseY < y + 50) {
-      gameState = "countdown";
-      countdownStart = millis();
-    }
+    gameState = "countdown";
+    countdownStart = millis();
+    return false;
   }
   if (["clear", "gameover"].includes(gameState)) {
-    let x = width / 2, y = height / 2 + 100;
-    if (mouseX > x - 150 && mouseX < x + 150 && mouseY > y - 50 && mouseY < y + 50) {
-      resetGame();
-    }
+    resetGame();
+    return false;
   }
-}
-
-function resetGame() {
-  gameState = "countdown";
-  enemies = [];
-  hp = 3;
-  bgY = 0;
-  countdownStart = millis();
-}
-
-function touchStarted() {
   if (dist(mouseX, mouseY, 80, height - 100) < 50) virtualLeftPressed = true;
   if (dist(mouseX, mouseY, width - 80, height - 100) < 50) virtualRightPressed = true;
   return false;
@@ -192,12 +178,20 @@ function touchEnded() {
   return false;
 }
 
-function keyPressed() {
-  if (gameState === "start" && key === " ") {
+function mousePressed() {
+  if (gameState === "start") {
     gameState = "countdown";
     countdownStart = millis();
   }
-  if (["clear", "gameover"].includes(gameState) && key === " ") {
+  if (["clear", "gameover"].includes(gameState)) {
     resetGame();
   }
+}
+
+function resetGame() {
+  gameState = "countdown";
+  enemies = [];
+  hp = 3;
+  bgOffset = 0;
+  countdownStart = millis();
 }
