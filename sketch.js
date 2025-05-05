@@ -142,7 +142,7 @@ function spawnEnemies() {
       let type = random(["front", "left", "right", "left", "right"]);
       let x = type === "front" ? random(width / 2 - 60, width / 2 + 60) : (type === "left" ? 0 : width);
       let y = type === "front" ? -100 : random(height / 3, height / 2); // 横敵は中央付近に出現
-      enemies.push({ x, y, type, vx: 0, vy: ENEMY_SPEED_BASE, t: 0 });
+      enemies.push({ x, y, type, vx: 0, vy: 0, t: 0 });
     }
   }
 }
@@ -158,7 +158,7 @@ function handleEnemies() {
         e.vy = ENEMY_SPEED_BASE + 3 * cos(angle);
       }
     } else if (e.type === "left" || e.type === "right") {
-      let angle = e.type === "left" ? random(-PI / 3, PI / 3) : random(2 * PI / 3, 4 * PI / 3);
+      let angle = e.type === "left" ? random(-PI / 6, PI / 6) : random(5 * PI / 6, 7 * PI / 6);
       let speed = ENEMY_SPEED_BASE + random(0, 3);
       e.vx = speed * cos(angle);
       e.vy = speed * sin(angle);
