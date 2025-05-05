@@ -93,7 +93,7 @@ function draw() {
 }
 
 function drawScrollingBackground() {
-  bgOffset += BACKGROUND_SPEED;
+  bgOffset -= BACKGROUND_SPEED;
   let bgH = bgImage.height;
   let n = ceil(height / bgH) + 1;
   for (let i = 0; i < n; i++) {
@@ -125,7 +125,7 @@ function movePlayer() {
 
 function spawnEnemies() {
   if (frameCount % ENEMY_INTERVAL === 0) {
-    let type = random(["front", "front", "left", "right"]); // front 50% chance
+    let type = random(["front", "front", "left", "right"]);
     let x = type === "front" ? random(width / 2 - 60, width / 2 + 60) :
             (type === "left" ? 0 : width);
     enemies.push({ x, y: -100, type, vx: 0, vy: ENEMY_SPEED_BASE, t: 0 });
