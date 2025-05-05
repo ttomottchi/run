@@ -1,183 +1,208 @@
+// === グローバル変数 ===
+let bgImage, playerImage, enemyFrontImage, enemyLeftImage, enemyRightImage;
+let startImage, clearImage, gameoverImage, retryImage;
+let leftButtonImage, rightButtonImage;
 
-let bgImg, playerImg, enemyFrontImg, enemyLeftImg, enemyRightImg;
-let startImg, clearImg, gameoverImg, retryImg;
-let bgY = 0;
 let playerX, playerY;
-let playerSpeed = 5;
 let enemies = [];
-let enemySpawnInterval = 90;
-let lastSpawnTime = 0;
-let hp = 3;
-let gameState = "start";
-let startButton, retryButton;
-let startTime;
-let countdown = 3;
-let timer = 66.6;
-let goalLineY = -12800;
-let leftPressed = false;
-let rightPressed = false;
-let leftBtn, rightBtn;
+let gameState = "start"; // "start", "countdown", "playing", "clear", "gameover"
+let startTime, countdownStart, hp = 3;
+let virtualLeftPressed = false;
+let virtualRightPressed = false;
+
+const GAME_DURATION = 66.6;
+const COUNTDOWN = 3;
+const PLAYER_SPEED = 7;
+const ENEMY_INTERVAL = 40;
+const ENEMY_SPEED = 6;
+const BACKGROUND_SPEED = 6;
+
+let bgY = 0;
+let fontSize = 32;
 
 function preload() {
-  bgImg = loadImage("images/bg.png");
-  playerImg = loadImage("images/player.png");
-  enemyFrontImg = loadImage("images/enemy_front.png");
-  enemyLeftImg = loadImage("images/enemy_left.png");
-  enemyRightImg = loadImage("images/enemy_right.png");
-  startImg = loadImage("images/start.png");
-  clearImg = loadImage("images/clear.png");
-  gameoverImg = loadImage("images/gameover.png");
-  retryImg = loadImage("images/retry.png");
+  bgImage = loadImage("images/bg.png");
+  playerImage = loadImage("images/player.png");
+  enemyFrontImage = loadImage("images/enemy_front.png");
+  enemyLeftImage = loadImage("images/enemy_left.png");
+  enemyRightImage = loadImage("images/enemy_right.png");
+  startImage = loadImage("images/start.png");
+  clearImage = loadImage("images/clear.png");
+  gameoverImage = loadImage("images/gameover.png");
+  retryImage = loadImage("images/retry.png");
+  leftButtonImage = loadImage("images/left_button.png");
+  rightButtonImage = loadImage("images/right_button.png");
 }
 
 function setup() {
-  createCanvas(720, 1280);
-  imageMode(CENTER);
+  createCanvas(windowWidth, windowHeight);
   textAlign(CENTER, CENTER);
-  textSize(64);
+  textSize(fontSize);
+  fill(255);
+  stroke(0);
+  strokeWeight(4);
   playerX = width / 2;
   playerY = height - 150;
+}
 
-  startButton = createImg("images/start.png");
-  startButton.position(width / 2 - 150, height / 2 - 50);
-  startButton.size(300, 100);
-  startButton.mousePressed(() => {
-    startButton.hide();
-    gameState = "countdown";
-    startTime = millis();
-  });
-
-  retryButton = createImg("images/retry.png");
-  retryButton.position(width / 2 - 150, height / 2 + 100);
-  retryButton.size(300, 100);
-  retryButton.hide();
-  retryButton.mousePressed(restartGame);
-
-  // Left button
-  leftBtn = createButton("◀");
-  leftBtn.position(20, height - 100);
-  leftBtn.size(100, 100);
-  leftBtn.style("font-size", "32px");
-  leftBtn.touchStarted(() => leftPressed = true);
-  leftBtn.touchEnded(() => leftPressed = false);
-  leftBtn.mousePressed(() => leftPressed = true);
-  leftBtn.mouseReleased(() => leftPressed = false);
-
-  // Right button
-  rightBtn = createButton("▶");
-  rightBtn.position(width - 120, height - 100);
-  rightBtn.size(100, 100);
-  rightBtn.style("font-size", "32px");
-  rightBtn.touchStarted(() => rightPressed = true);
-  rightBtn.touchEnded(() => rightPressed = false);
-  rightBtn.mousePressed(() => rightPressed = true);
-  rightBtn.mouseReleased(() => rightPressed = false);
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 function draw() {
   background(0);
-  image(bgImg, width / 2, bgY + bgImg.height / 2);
-  image(bgImg, width / 2, bgY + bgImg.height * 1.5);
 
   if (gameState === "start") {
-    bgY += 2;
-    bgY %= bgImg.height;
-    startButton.show();
-    leftBtn.hide();
-    rightBtn.hide();
+    image(bgImage, 0, 0, width, height);
+    image(startImage, width / 2 - 150, height / 2 - 50);
   } else if (gameState === "countdown") {
-    leftBtn.show();
-    rightBtn.show();
-    let elapsed = (millis() - startTime) / 1000;
-    let count = floor(3 - elapsed);
-    fill(255);
-    stroke(0);
-    strokeWeight(8);
-    text(count > 0 ? count : "START!", width / 2, height / 2);
-    if (elapsed > 3) {
+    image(bgImage, 0, 0, width, height);
+    let elapsed = (millis() - countdownStart) / 1000;
+    let count = 3 - floor(elapsed);
+    if (count > 0) {
+      drawTextWithShadow(count.toString(), width / 2, height / 2);
+    } else {
       gameState = "playing";
       startTime = millis();
     }
   } else if (gameState === "playing") {
-    leftBtn.show();
-    rightBtn.show();
-    updateGame();
-  } else if (gameState === "gameover") {
-    image(gameoverImg, width / 2, height / 2);
-    retryButton.show();
-    leftBtn.hide();
-    rightBtn.hide();
+    updateBackground();
+    handleInput();
+    moveEnemies();
+    checkCollisions();
+    drawPlayer();
+    drawEnemies();
+    drawHUD();
+    spawnEnemies();
+
+    let timeElapsed = (millis() - startTime) / 1000;
+    if (timeElapsed >= GAME_DURATION) {
+      gameState = "clear";
+    }
   } else if (gameState === "clear") {
-    image(clearImg, width / 2, height / 2);
-    retryButton.show();
-    leftBtn.hide();
-    rightBtn.hide();
+    image(bgImage, 0, 0, width, height);
+    image(clearImage, width / 2 - 200, height / 2 - 100);
+    image(retryImage, width / 2 - 150, height / 2 + 50);
+  } else if (gameState === "gameover") {
+    image(bgImage, 0, 0, width, height);
+    image(gameoverImage, width / 2 - 200, height / 2 - 100);
+    image(retryImage, width / 2 - 150, height / 2 + 50);
   }
 
-  if (gameState === "playing" || gameState === "countdown") {
-    for (let i = 0; i < hp; i++) {
-      image(playerImg, 60 + i * 100, 60, 96, 96);
+  if (gameState !== "start" && gameState !== "clear" && gameState !== "gameover") {
+    drawVirtualButtons();
+  }
+}
+function updateBackground() {
+  bgY += BACKGROUND_SPEED;
+  image(bgImage, 0, -bgY % height, width, height);
+  image(bgImage, 0, -bgY % height + height, width, height);
+}
+
+function drawTextWithShadow(txt, x, y) {
+  stroke(0);
+  strokeWeight(6);
+  fill(255);
+  textSize(64);
+  text(txt, x, y);
+}
+
+function drawPlayer() {
+  image(playerImage, playerX - 48, playerY - 48, 96, 96);
+}
+
+function handleInput() {
+  if (keyIsDown(LEFT_ARROW) || virtualLeftPressed) {
+    playerX -= PLAYER_SPEED;
+  }
+  if (keyIsDown(RIGHT_ARROW) || virtualRightPressed) {
+    playerX += PLAYER_SPEED;
+  }
+  playerX = constrain(playerX, 48, width - 48);
+}
+
+function spawnEnemies() {
+  if (frameCount % ENEMY_INTERVAL === 0) {
+    let type = random(["front", "left", "right"]);
+    let x = type === "front" ? random(50, width - 50) : (type === "left" ? 0 : width);
+    enemies.push({ x: x, y: -100, type: type });
+  }
+}
+function moveEnemies() {
+  for (let e of enemies) {
+    if (e.type === "front") {
+      e.y += ENEMY_SPEED;
+    } else if (e.type === "left") {
+      e.x += 3;
+      e.y += ENEMY_SPEED;
+    } else if (e.type === "right") {
+      e.x -= 3;
+      e.y += ENEMY_SPEED;
     }
-    fill(255);
-    stroke(0);
-    strokeWeight(6);
-    text(nf(timer, 2, 1), width - 100, 60);
   }
 }
 
-function updateGame() {
-  let elapsed = (millis() - startTime) / 1000;
-  timer = max(0, 66.6 - elapsed);
-  bgY -= 4;
-  bgY %= bgImg.height;
-
-  // player move
-  if (keyIsDown(LEFT_ARROW) || leftPressed) playerX -= playerSpeed;
-  if (keyIsDown(RIGHT_ARROW) || rightPressed) playerX += playerSpeed;
-  playerX = constrain(playerX, 50, width - 50);
-
-  image(playerImg, playerX, playerY, 96, 96);
-
-  // spawn enemies
-  if (frameCount - lastSpawnTime > enemySpawnInterval) {
-    let type = random(["front", "left", "right"]);
-    let x = type === "front" ? random(50, width - 50) : (type === "left" ? -50 : width + 50);
-    let y = -100;
-    let vx = type === "left" ? 3 : (type === "right" ? -3 : 0);
-    enemies.push({ x, y, vx, vy: 4, type });
-    lastSpawnTime = frameCount;
+function drawEnemies() {
+  for (let e of enemies) {
+    let img = e.type === "front" ? enemyFrontImage :
+              e.type === "left" ? enemyLeftImage : enemyRightImage;
+    image(img, e.x, e.y, 96, 96);
   }
+}
 
+function checkCollisions() {
   for (let i = enemies.length - 1; i >= 0; i--) {
     let e = enemies[i];
-    e.x += e.vx;
-    e.y += e.vy;
-    let img = e.type === "front" ? enemyFrontImg : (e.type === "left" ? enemyLeftImg : enemyRightImg);
-    image(img, e.x, e.y, 96, 96);
-
-    // collision
-    if (dist(e.x, e.y, playerX, playerY) < 48) {
+    let d = dist(playerX, playerY, e.x, e.y);
+    if (d < 48) {
       enemies.splice(i, 1);
       hp--;
-      if (hp <= 0) gameState = "gameover";
-    } else if (e.y > height + 100) {
+      if (hp <= 0) {
+        gameState = "gameover";
+      }
+    } else if (e.y > height + 100 || e.x < -100 || e.x > width + 100) {
       enemies.splice(i, 1);
     }
   }
+}
 
-  // Goal line
-  if (timer <= 0) {
-    gameState = "clear";
+function drawHUD() {
+  let remaining = GAME_DURATION - (millis() - startTime) / 1000;
+  drawTextWithShadow(remaining.toFixed(1), width - 100, 40);
+  for (let i = 0; i < hp; i++) {
+    image(playerImage, 20 + i * 40, 20, 32, 32);
   }
 }
 
-function restartGame() {
-  hp = 3;
-  timer = 66.6;
-  enemies = [];
-  bgY = 0;
-  playerX = width / 2;
-  retryButton.hide();
-  gameState = "countdown";
-  startTime = millis();
+function drawVirtualButtons() {
+  image(leftButtonImage, 80, height - 100, 100, 100);
+  image(rightButtonImage, width - 80, height - 100, 100, 100);
 }
+
+function touchStarted() {
+  if (dist(mouseX, mouseY, 80, height - 100) < 50) {
+    virtualLeftPressed = true;
+  } else if (dist(mouseX, mouseY, width - 80, height - 100) < 50) {
+    virtualRightPressed = true;
+  }
+  return false;
+}
+
+function touchEnded() {
+  virtualLeftPressed = false;
+  virtualRightPressed = false;
+  return false;
+}
+
+function keyPressed() {
+  if (gameState === "start" && key === " ") {
+    gameState = "countdown";
+    countdownStart = millis();
+  }
+
+  if ((gameState === "clear" || gameState === "gameover") && key === " ") {
+    resetGame();
+  }
+}
+
+
