@@ -158,7 +158,7 @@ function handleEnemies() {
         e.vy = ENEMY_SPEED_BASE + 3 * cos(angle);
       }
     } else if (e.type === "left" || e.type === "right") {
-      let angle = e.type === "left" ? random(-PI / 6, PI / 6) : random(5 * PI / 6, 7 * PI / 6);
+      let angle = e.type === "left" ? random(PI / 12, PI / 3) : random(2 * PI / 3, 11 * PI / 12);
       let speed = ENEMY_SPEED_BASE + random(0, 3);
       e.vx = speed * cos(angle);
       e.vy = speed * sin(angle);
