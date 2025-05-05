@@ -143,7 +143,7 @@ function spawnEnemies() {
       if (rushMode) {
         type = "front";
       } else {
-        type = random(["front", "left", "right", "left", "right"]);
+        type = random(["front", "left", "right", "front", "front"]);
       }
       let x = type === "front" ? random(width / 2 - 60, width / 2 + 60) : (type === "left" ? 0 : width);
       let y = type === "front" ? -100 : random(height / 3, height / 2); // 横敵は中央付近に出現
