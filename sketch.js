@@ -3,6 +3,8 @@ let bgImage, playerImage, enemyFrontImage, enemyLeftImage, enemyRightImage;
 let startImage, clearImage, gameoverImage, retryImage;
 let leftButtonImage, rightButtonImage;
 
+let seStart, seHit, seClear, seGameover;
+
 let playerX, playerY;
 let enemies = [];
 let gameState = "start";
@@ -18,7 +20,6 @@ const BACKGROUND_SPEED = 6;
 const ENEMY_SPEED_BASE = 6;
 
 let bgOffset = 0;
-let fontSize = 32;
 
 function preload() {
   bgImage = loadImage("images/bg.png");
@@ -32,6 +33,11 @@ function preload() {
   retryImage = loadImage("images/retry.png");
   leftButtonImage = loadImage("images/left_button.png");
   rightButtonImage = loadImage("images/right_button.png");
+
+  seStart = loadSound("sounds/start.mp3");
+  seHit = loadSound("sounds/hit.mp3");
+  seClear = loadSound("sounds/clear.mp3");
+  seGameover = loadSound("sounds/gameover.mp3");
 }
 
 function setup() {
@@ -74,6 +80,7 @@ function draw() {
     spawnEnemies();
     if ((millis() - startTime) / 1000 >= GAME_DURATION) {
       gameState = "clear";
+      seClear.play();
     }
     drawVirtualButtons();
   } else if (gameState === "clear") {
@@ -118,8 +125,9 @@ function movePlayer() {
 
 function spawnEnemies() {
   if (frameCount % ENEMY_INTERVAL === 0) {
-    let type = random(["front", "left", "right"]);
-    let x = type === "front" ? random(50, width - 50) : (type === "left" ? 0 : width);
+    let type = random(["front", "front", "left", "right"]); // front 50% chance
+    let x = type === "front" ? random(width / 2 - 60, width / 2 + 60) :
+            (type === "left" ? 0 : width);
     enemies.push({ x, y: -100, type, vx: 0, vy: ENEMY_SPEED_BASE, t: 0 });
   }
 }
@@ -145,7 +153,11 @@ function handleEnemies() {
     if (dist(playerX, playerY, e.x, e.y) < 48) {
       enemies.splice(i, 1);
       hp--;
-      if (hp <= 0) gameState = "gameover";
+      seHit.play();
+      if (hp <= 0) {
+        gameState = "gameover";
+        seGameover.play();
+      }
     } else if (e.y > height + 100 || e.x < -100 || e.x > width + 100) {
       enemies.splice(i, 1);
     }
@@ -158,8 +170,6 @@ function drawHUD() {
   drawText(remaining.toFixed(1), width - 100, 40);
 
   for (let i = 0; i < hp; i++) {
-    fill(255);
-    rect(20 + i * 60 - 4, 36, 40, 40);
     image(playerImage, 20 + i * 60, 40, 48, 48);
   }
 }
@@ -177,6 +187,7 @@ function touchStarted() {
   if (gameState === "start") {
     gameState = "countdown";
     countdownStart = millis();
+    seStart.play();
     return false;
   }
   if (["clear", "gameover"].includes(gameState)) {
@@ -198,6 +209,7 @@ function mousePressed() {
   if (gameState === "start") {
     gameState = "countdown";
     countdownStart = millis();
+    seStart.play();
   }
   if (["clear", "gameover"].includes(gameState)) {
     resetGame();
