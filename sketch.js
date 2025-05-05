@@ -19,7 +19,7 @@ const COUNTDOWN = 3;
 const PLAYER_SPEED = 7;
 const ENEMY_INTERVAL = 40;
 const BACKGROUND_SPEED = 6;
-const ENEMY_SPEED_BASE = 6;
+const ENEMY_SPEED_BASE = 4;
 
 let bgOffset = 0;
 let rushMode = false;
