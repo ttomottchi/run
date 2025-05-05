@@ -141,7 +141,8 @@ function spawnEnemies() {
     for (let i = 0; i < num; i++) {
       let type = random(["front", "left", "right", "left", "right"]);
       let x = type === "front" ? random(width / 2 - 60, width / 2 + 60) : (type === "left" ? 0 : width);
-      enemies.push({ x, y: -100, type, vx: 0, vy: ENEMY_SPEED_BASE, t: 0 });
+      let y = type === "front" ? -100 : random(height / 3, height / 2); // 横敵は中央付近に出現
+      enemies.push({ x, y, type, vx: 0, vy: ENEMY_SPEED_BASE, t: 0 });
     }
   }
 }
