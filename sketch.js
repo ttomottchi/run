@@ -137,7 +137,7 @@ function movePlayer() {
 function spawnEnemies() {
   let interval = rushMode ? ENEMY_INTERVAL / 2 : ENEMY_INTERVAL;
   if (frameCount % interval === 0) {
-    let num = rushMode ? 4 : floor(random(1, 4));
+    let num = 1;
     for (let i = 0; i < num; i++) {
       let type;
       if (rushMode) {
