@@ -6,6 +6,7 @@ let seStart, seHit, seClear, seGameover;
 
 let playerX, playerY;
 let enemies = [];
+let particles = [];
 let gameState = "start";
 let startTime, countdownStart, hp = 3;
 let virtualLeftPressed = false;
@@ -80,11 +81,13 @@ function draw() {
     if ((millis() - startTime) / 1000 >= GAME_DURATION) {
       gameState = "clear";
       seClear.play();
+      createGoalParticles();
     }
     drawVirtualButtons();
   } else if (gameState === "clear") {
     image(clearImage, width / 2, height / 2 - 100);
     image(retryImage, width / 2, height / 2 + 100);
+    updateParticles();
   } else if (gameState === "gameover") {
     image(gameoverImage, width / 2, height / 2 - 100);
     image(retryImage, width / 2, height / 2 + 100);
@@ -94,8 +97,8 @@ function draw() {
 function drawScrollingBackground() {
   bgOffset = (bgOffset + BACKGROUND_SPEED) % bgImage.height;
 
-  image(bgImage, width / 2, -bgOffset + height / 2, width, bgImage.height);
-  image(bgImage, width / 2, -bgOffset + height / 2 + bgImage.height, width, bgImage.height);
+  image(bgImage, width / 2, bgOffset - bgImage.height / 2, width, bgImage.height);
+  image(bgImage, width / 2, bgOffset + bgImage.height / 2, width, bgImage.height);
 }
 
 function drawStaticBackground() {
@@ -219,4 +222,37 @@ function resetGame() {
   hp = 3;
   bgOffset = 0;
   countdownStart = millis();
+  particles = [];
+}
+
+function createGoalParticles() {
+  for (let i = 0; i < 100; i++) {
+    let angle = random(TWO_PI);
+    let speed = random(2, 6);
+    particles.push({
+      x: width / 2,
+      y: height / 2,
+      vx: cos(angle) * speed,
+      vy: sin(angle) * speed,
+      life: 255,
+      size: random(4, 10),
+      color: [random(200, 255), random(200, 255), random(200, 255)]
+    });
+  }
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    let p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 4;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    } else {
+      noStroke();
+      fill(p.color[0], p.color[1], p.color[2], p.life);
+      ellipse(p.x, p.y, p.size);
+    }
+  }
 }
